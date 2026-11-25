@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>The Last Island</title>
+<meta name="description" content="An island built by its followers. Every settler gets a home.">
+<meta property="og:title" content="The Last Island — an island built by its followers">
+<meta name="theme-color" content="#2b2118">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: rgba(255, 249, 238, .94);
+    --ink: #2b2118;
+    --muted: #7a6650;
+    --line: #d9c7a5;
+    --accent: #c8352f;
+    --gold: #e0a93c;
+    --field: #fffdf7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: rgba(33, 27, 22, .92); --ink: #f6ead6; --muted: #bfa98a;
+      --line: #5a4a37; --field: #2b231c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: rgba(33, 27, 22, .92); --ink: #f6ead6; --muted: #bfa98a;
+    --line: #5a4a37; --field: #2b231c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #5fa9bd; color: var(--ink);
+    font-family: "Nunito", system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  .card { position: fixed; left: 12px; right: 12px; max-width: 460px; margin: 0 auto; background: var(--paper);
+    border: 1.5px solid var(--line); border-radius: 16px; box-shadow: 0 6px 22px rgba(40, 25, 10, .22);
+    backdrop-filter: blur(6px); }
+  #head { top: calc(10px + env(safe-area-inset-top)); padding: 10px 14px; cursor: pointer; }
+  #head h1 { margin: 0; font-size: 19px; display: inline; }
+  #head h1 small { font-size: 14px; color: var(--muted); margin-left: 4px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 700; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--accent)); }
+  .more { display: none; margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
+  #head.open .more { display: block; }
+  #head .caret { float: right; color: var(--muted); transition: transform .2s; }
+  #head.open .caret { transform: rotate(180deg); }
+  #wish { font-size: 13.5px; margin: 0 0 8px; }
+  #wish-by { color: var(--muted); }
+  #clans { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12.5px; padding: 2px 9px 2px 7px; border-radius: 999px; border: 1.5px solid var(--clan);
+    background: var(--field); white-space: nowrap; }
+  .chip::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--clan);
+    margin-right: 5px; }
+  #foot { bottom: calc(12px + env(safe-area-inset-bottom)); padding: 10px 12px; }
+  form { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; font: 16px "Nunito", system-ui, sans-serif; padding: 10px 12px; color: var(--ink);
+    border: 1.5px solid var(--line); border-radius: 12px; background: var(--field); }
+  button { font: 700 15px "Nunito", system-ui, sans-serif; border: 0; border-radius: 12px; padding: 0 16px;
+    background: var(--accent); color: #fff6e8; cursor: pointer; min-height: 44px; }
+  .result { margin-top: 10px; position: relative; }
+  .result h2 { margin: 0 0 4px; font-size: 17px; }
+  .result p { margin: 0; font-size: 14px; color: var(--muted); }
+  .result .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .result .ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
+  .x { position: absolute; top: -4px; right: 0; background: none; color: var(--muted); padding: 0 6px; min-height: 30px; font-size: 18px; }
+  #found-clan { color: var(--clan); font-weight: 700; }
+  .hint { font-size: 12px; color: var(--muted); margin: 7px 2px 0; }
+  .tools { position: fixed; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
+  .tools button { width: 46px; height: 46px; padding: 0; border-radius: 50%; font-size: 22px; background: var(--paper);
+    color: var(--ink); border: 1.5px solid var(--line); box-shadow: 0 3px 10px rgba(40, 25, 10, .2); }
+  .tools #names { font-size: 13px; }
+  .tools #names[aria-pressed="false"] { opacity: .55; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
+    text-align: center; font-size: 18px; color: #4b5a63; background: #eef1f5; transition: opacity .8s; z-index: 10; }
+  #loading.gone { opacity: 0; pointer-events: none; }
+  .vote { margin: 6px 0 0; font-size: 13px; padding: 6px 8px; border-radius: 10px; background: var(--field);
+    border: 1px dashed var(--gold); }
+  .vote-how { color: var(--muted); }
+
+  /* Play panel */
+  #play { bottom: calc(12px + env(safe-area-inset-bottom)); padding: 12px 14px; max-height: calc(100vh - 140px); overflow-y: auto; }
+  #play h2 { margin: 0; font-size: 18px; }
+  #play .sub { margin: 2px 0 8px; font-size: 13px; color: var(--muted); }
+  .energy { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .energy .bar { flex: 1; margin: 0; }
+  .bar.small i { background: linear-gradient(90deg, #6fbf73, #3f9a5a); transition: width .3s; }
+  .inv { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .res { font-size: 13px; padding: 3px 9px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .big { min-height: 54px; font-size: 14.5px; line-height: 1.2; padding: 6px 10px; }
+  .big.alt { background: #3d5166; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:not(:disabled):active { transform: translateY(1px); }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); font-size: 13.5px; padding: 0 10px; }
+  .shop { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; font-size: 13.5px; }
+  .shop label { display: flex; align-items: center; gap: 6px; margin-right: auto; font-weight: 700; }
+  select { font: 14px "Nunito", system-ui, sans-serif; padding: 6px 8px; border-radius: 10px; color: var(--ink);
+    border: 1.5px solid var(--line); background: var(--field); }
+  .toast { min-height: 20px; margin: 8px 2px 0; font-size: 14px; font-weight: 700; color: #3f7a4a; }
+  .toast.bad { color: var(--accent); }
+  .signin-how { font-size: 14px; margin: 4px 0 10px; line-height: 1.4; }
+  #p-code { letter-spacing: .25em; font-weight: 700; }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="map" aria-label="Map of The Last Island, the island built by its followers"></canvas>
+
+<header id="head" class="card" aria-expanded="false">
+  <span class="caret" aria-hidden="true">▾</span>
+  <h1>The Last Island</h1>
+  <div class="meta"><b id="day">Day –</b> · <span id="settlers">…</span></div>
+  <div class="bar" aria-hidden="true"><i id="goal-bar" style="width:0"></i></div>
+  <div class="meta"><span id="goal-title"></span>: <b id="goal-count"></b></div>
+  <p id="vote" class="vote" hidden><b>Island vote:</b> <span id="vote-text"></span>
+    <span class="vote-how">Comment your vote on our latest post.</span></p>
+  <div class="more">
+    <p id="wish" hidden>Today's wish: <span id="wish-text"></span> <span id="wish-by"></span></p>
+    <div id="clans" aria-label="Clan sizes"></div>
+  </div>
+</header>
+
+<div class="tools">
+  <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+  <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+  <button id="names" type="button" aria-pressed="true" aria-label="Show names">Aa</button>
+</div>
+
+<section id="foot" class="card">
+  <form id="search" autocomplete="off" role="search">
+    <input id="q" placeholder="Find your house: @yourname" autocapitalize="none" autocorrect="off"
+           spellcheck="false" enterkeyhint="search" aria-label="Instagram handle">
+    <button>Find</button>
+  </form>
+  <div id="found" class="result" hidden>
+    <button class="x" type="button" data-close aria-label="Close">×</button>
+    <h2 id="found-name"></h2>
+    <p><span id="found-job"></span> · <span id="found-home"></span> · Clan <span id="found-clan"></span></p>
+    <div class="row">
+      <button id="play-btn" type="button">Play as <span id="play-as"></span></button>
+      <button id="share" class="ghost" type="button">Share my house</button>
+    </div>
+  </div>
+  <div id="missing" class="result" hidden>
+    <button class="x" type="button" data-close aria-label="Close">×</button>
+    <h2><span id="missing-name"></span> hasn't arrived yet</h2>
+    <p>Comment <b>JOIN</b> on our latest post and a boat will bring you to the island at the next count.</p>
+  </div>
+  <p class="hint">Every settler gets a home. Don't want yours shown? DM us.</p>
+</section>
+
+<section id="play" class="card" hidden aria-label="Your island life">
+  <button class="x" type="button" id="play-close" aria-label="Back to the map">×</button>
+  <h2 id="p-name"></h2>
+  <p class="sub"><span id="p-job"></span> · <span id="p-home"></span> · <span id="p-lanterns"></span></p>
+
+  <div id="p-signin" hidden>
+    <p class="signin-how">To play as <b id="p-signin-handle"></b>, DM the word <b>PLAY</b> to <b id="p-ig">us</b> on Instagram.
+      We'll reply with a 6-digit code. It proves the house is yours.</p>
+    <form id="p-signin-form" autocomplete="off">
+      <input id="p-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code"
+             aria-label="6-digit code from our Instagram DM" required>
+      <button id="p-signin-btn">Sign in</button>
+    </form>
+  </div>
+
+  <div id="p-game">
+  <div class="energy">
+    <span>Energy <b id="p-energy"></b></span>
+    <div class="bar small" aria-hidden="true"><i id="p-energy-bar"></i></div>
+  </div>
+  <div class="inv" aria-label="Your resources">
+    <span class="res">🪙 <b id="p-coins"></b> coins</span>
+    <span class="res">🪵 <b id="p-wood"></b> wood</span>
+    <span class="res">🪨 <b id="p-stone"></b> stone</span>
+    <span class="res">🐟 <b id="p-food"></b> food</span>
+  </div>
+
+  <div class="actions">
+    <button id="p-work" type="button" class="big"></button>
+    <button id="p-upgrade" type="button" class="big alt"></button>
+  </div>
+
+  <div class="shop">
+    <label>Light lanterns
+      <select id="p-donate-res" aria-label="Resource to give"><option>wood</option><option>stone</option><option>food</option></select>
+    </label>
+    <button id="p-donate" type="button" class="ghost"></button>
+  </div>
+  <div class="shop">
+    <label>Harbour
+      <select id="p-trade-res" aria-label="Resource to trade"><option>wood</option><option>stone</option><option>food</option></select>
+    </label>
+    <button id="p-buy" type="button" class="ghost"></button>
+    <button id="p-sell" type="button" class="ghost"></button>
+  </div>
+  </div>
+
+  <p id="p-toast" class="toast" role="status" aria-live="polite"></p>
+  <p class="hint" id="p-mode"></p>
+</section>
+
+<div id="loading">The mist is lifting…</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
