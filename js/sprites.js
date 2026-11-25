@@ -2,9 +2,9 @@
 // (bx, by) is the centre of the object's ground cell, in px at zoom 1.
 import { TW, TH } from "./geo.js";
 
-const P = (dx, dy, up = 0) => [(dx - dy) * TW / 2, (dx + dy) * TH / 2 - up];
+export const P = (dx, dy, up = 0) => [(dx - dy) * TW / 2, (dx + dy) * TH / 2 - up];
 
-function poly(ctx, bx, by, pts, fill, stroke) {
+export function poly(ctx, bx, by, pts, fill, stroke) {
   ctx.beginPath();
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(bx + x, by + y) : ctx.moveTo(bx + x, by + y)));
   ctx.closePath();
@@ -14,7 +14,7 @@ function poly(ctx, bx, by, pts, fill, stroke) {
 }
 
 /** Box of w×d cells and h px tall; colours = [top, left face, right face]. */
-function box(ctx, bx, by, w, d, h, [top, left, right], lift = 0) {
+export function box(ctx, bx, by, w, d, h, [top, left, right], lift = 0) {
   const A = P(-w / 2, -d / 2, lift), B = P(w / 2, -d / 2, lift), C = P(w / 2, d / 2, lift), D = P(-w / 2, d / 2, lift);
   const up = ([x, y]) => [x, y - h];
   poly(ctx, bx, by, [D, C, up(C), up(D)], left);
@@ -23,7 +23,7 @@ function box(ctx, bx, by, w, d, h, [top, left, right], lift = 0) {
 }
 
 /** Hip roof over a w×d footprint starting at height h; ridge along x. colours = [back, front, side]. */
-function hipRoof(ctx, bx, by, w, d, h, rise, eave, [back, front, side], hip = 0.25) {
+export function hipRoof(ctx, bx, by, w, d, h, rise, eave, [back, front, side], hip = 0.25) {
   const W = w / 2 + eave, D = d / 2 + eave, r = Math.max(0, W - hip * w);
   const A = P(-W, -D, h), B = P(W, -D, h), C = P(W, D, h), Dd = P(-W, D, h);
   const L = P(-r, 0, h + rise), R = P(r, 0, h + rise);

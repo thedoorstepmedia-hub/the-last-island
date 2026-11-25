@@ -1,7 +1,10 @@
 // Builds the island once from data.json: a cached bitmap (terrain + every object)
 // plus a depth-sorted object list for crisp live drawing when zoomed in.
-import { iso, ISO_K, TW, TH, CLAN_COLORS, cellHash, noise, shoreAt, isRoad, isCourtyard, strHash } from "./geo.js";
+import { iso, ISO_K, TW, TH, CLAN_COLORS, cellHash, noise, shoreAt, isRoad, isCourtyard, isWishLot, strHash } from "./geo.js";
 import { HOUSES, drawSakura, drawPine, drawLantern, drawGlow, drawShrine, drawTorii } from "./sprites.js";
+import { LANDMARK_SPRITES, drawWishSign } from "./landmarks.js";
+
+const LANDMARK_SCALE = 2; // wish buildings fill their whole 3x3 lot
 
 const GRASS = ["#8fbd70", "#97c277", "#a0c87f", "#a9cd86"];
 const WILD = ["#7aa564", "#80aa68", "#86af6d"];
@@ -19,6 +22,7 @@ const PLAZA = [
 function landColor(x, y, r, mist, data) {
   if (r <= data.plaza_radius) return (x + y) % 2 ? "#d9d2c3" : "#d2cab9";
   if (r <= mist + 1 && isRoad(x, y, data.block)) return "#d8c08f";
+  if (r <= mist && isWishLot(x, y, data.block, data.plaza_radius)) return (x + y) % 2 ? "#dcc79c" : "#d6c093";
   if (r <= mist && isCourtyard(x, y, data.block)) return "#b5d58e";
   const n = noise(x / 6, y / 6, 3);
   return r <= mist ? GRASS[Math.min(3, Math.floor(n * 4))] : WILD[Math.min(2, Math.floor(n * 3))];
@@ -55,6 +59,10 @@ function scatter(data, occupied, extent) {
         if (cellHash(x, y, 9) < 0.3) lanternSpots.push({ x, y, r });
         continue;
       }
+      if (inside && isWishLot(x, y, data.block, data.plaza_radius)) {
+        if (isCourtyard(x, y, data.block)) objects.push({ kind: "sign", x, y });
+        continue; // wish lots stay clear: no trees
+      }
       const h = cellHash(x, y, 5);
       const garden = inside && isCourtyard(x, y, data.block);
       if (garden || h < (inside ? 0.16 : 0.5)) {
@@ -76,19 +84,39 @@ export function drawObject(ctx, o, bx, by) {
     case "lantern": if (o.lit) drawGlow(ctx, bx, by); return drawLantern(ctx, bx, by, o.lit);
     case "shrine": return drawShrine(ctx, bx, by);
     case "torii": return drawTorii(ctx, bx, by);
+    case "sign": return drawWishSign(ctx, bx, by);
+    case "landmark":
+      ctx.save();
+      ctx.translate(bx, by);
+      ctx.scale(LANDMARK_SCALE, LANDMARK_SCALE);
+      LANDMARK_SPRITES[o.type](ctx, 0, 0);
+      ctx.restore();
+      return undefined;
     default: return undefined;
   }
 }
 
-/** @param {object} data parsed data.json */
-export function buildScene(data) {
-  const occupied = new Set(data.residents.map(([, gx, gy]) => gx + "," + gy));
+/**
+ * @param {object} data validated data.json
+ * @param {{ occupied?: Iterable<string> }} [opts] extra "gx,gy" cells to keep free of trees
+ *   (the video's "before" scene passes the cells of houses that will rise later)
+ */
+export function buildScene(data, opts = {}) {
+  const landmarks = data.landmarks || [];
+  const occupied = new Set([
+    ...data.residents.map(([, gx, gy]) => gx + "," + gy),
+    ...landmarks.map(l => l.gx + "," + l.gy),
+  ]);
+  for (const cell of opts.occupied || []) occupied.add(cell);
+  const landmarkObjects = landmarks.map(l => ({
+    kind: "landmark", type: l.kind, x: l.gx, y: l.gy, gx: l.gx, gy: l.gy, by: l.by, day: l.day,
+  }));
   const houseObjects = data.residents.map(([handle, gx, gy, tier, job, clan]) => ({
     kind: "house", handle, x: gx + (strHash(handle) - 0.5) * 0.12, y: gy, gx, gy, tier, job, clan,
   }));
 
   const extent = Math.ceil(data.island_radius + 7);
-  const objects = [...houseObjects, ...PLAZA, ...scatter(data, occupied, extent)]
+  const objects = [...houseObjects, ...landmarkObjects, ...PLAZA, ...scatter(data, occupied, extent)]
     .map(o => { const [sx, sy] = iso(o.x, o.y); return { ...o, sx, sy, depth: o.x + o.y }; })
     .sort((a, b) => a.depth - b.depth);
 
@@ -115,7 +143,8 @@ export function buildScene(data) {
   // Lookups point at the final objects (with screen positions), not the pre-map copies.
   const houseList = objects.filter(o => o.kind === "house");
   const houses = new Map(houseList.map(o => [o.handle, o]));
-  return { cache, terrain, scale, terrainScale, halfW, halfH, objects, houseList, houses };
+  const landmarkList = objects.filter(o => o.kind === "landmark");
+  return { cache, terrain, scale, terrainScale, halfW, halfH, objects, houseList, houses, landmarkList };
 }
 
 function makeLayer(halfW, halfH, scale, paint) {

@@ -55,6 +55,16 @@ export function isCourtyard(x, y, block) {
   return mod(x) === m && mod(y) === m;
 }
 
+export const WISH_LOT_EVERY = 5;
+
+/** Every cell of a block kept empty for a wish building (mirrors build_world.is_wish_lot). */
+export function isWishLot(x, y, block, plazaRadius) {
+  const bi = Math.floor(x / block), bj = Math.floor(y / block);
+  const cx = bi * block + (block >> 1), cy = bj * block + (block >> 1);
+  const k = (((bi + 2 * bj) % WISH_LOT_EVERY) + WISH_LOT_EVERY) % WISH_LOT_EVERY;
+  return k === 0 && Math.hypot(cx, cy) > plazaRadius + 1;
+}
+
 export function normalizeHandle(raw) {
   const h = String(raw || "").trim().replace(/^@+/, "").toLowerCase();
   return /^[a-z0-9._]{1,30}$/.test(h) ? h : null;

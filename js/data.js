@@ -1,5 +1,6 @@
 // Validates data.json before anything is drawn: one bad row must never blank the map.
-import { normalizeHandle, CLAN_COLORS } from "./geo.js";
+import { normalizeHandle, CLAN_COLORS, isCourtyard, isWishLot } from "./geo.js";
+import { LANDMARK_SPRITES } from "./landmarks.js";
 
 const HOUSE_TIERS = 4; // sprites.js HOUSES length
 
@@ -37,10 +38,14 @@ export function validateData(raw) {
     residents.push([handle, gx, gy, tier, job, clan]);
   }
 
-  const clanCounts = clans.map((_, i) => residents.filter(r => r[5] === i).length);
-  const furthest = residents.reduce((m, r) => Math.max(m, Math.hypot(r[1], r[2])), 0);
-  const mist = Math.max(num(raw.mist_radius, 0), furthest + 1, 10);
   const block = Math.max(2, Math.round(num(raw.block, 4)));
+  const plazaRadius = Math.max(2, num(raw.plaza_radius, 7));
+  const landmarks = cleanLandmarks(raw.landmarks, block, plazaRadius);
+
+  const clanCounts = clans.map((_, i) => residents.filter(r => r[5] === i).length);
+  const furthest = [...residents, ...landmarks.map(l => [l.kind, l.gx, l.gy])]
+    .reduce((m, r) => Math.max(m, Math.hypot(r[1], r[2])), 0);
+  const mist = Math.max(num(raw.mist_radius, 0), furthest + 1, 10);
 
   return {
     name: str(raw.name) || "The Last Island",
@@ -53,11 +58,28 @@ export function validateData(raw) {
     vote: str(raw.vote),
     wish_by: normalizeHandle(raw.wish_by) || "",
     block,
-    plaza_radius: Math.max(2, num(raw.plaza_radius, 7)),
+    plaza_radius: plazaRadius,
     mist_radius: mist,
     island_radius: Math.max(num(raw.island_radius, 0), mist + 4),
     jobs, clans, tiers,
     clan_counts: clanCounts,
     residents,
+    landmarks,
   };
+}
+
+/** [[kind, gx, gy, by, day], ...] -> [{ kind, gx, gy, by, day }]; unknown kinds and clashes are skipped. */
+function cleanLandmarks(raw, block, plazaRadius) {
+  if (!Array.isArray(raw)) return [];
+  const taken = new Set();
+  const out = [];
+  for (const row of raw) {
+    if (!Array.isArray(row) || row.length < 3) continue;
+    const [kind, gx, gy, by, day] = row;
+    if (!Object.prototype.hasOwnProperty.call(LANDMARK_SPRITES, kind) || !Number.isInteger(gx) || !Number.isInteger(gy)) continue;
+    if (!isCourtyard(gx, gy, block) || !isWishLot(gx, gy, block, plazaRadius) || taken.has(gx + "," + gy)) continue;
+    taken.add(gx + "," + gy);
+    out.push({ kind, gx, gy, by: normalizeHandle(by) || "", day: Number.isInteger(day) ? day : 1 });
+  }
+  return out;
 }

@@ -1,6 +1,7 @@
 // The Last Island — map page: camera, input, mist, search and the info cards.
 import { ISO_K, CLAN_COLORS, iso, normalizeHandle } from "./geo.js";
 import { buildScene, drawObject } from "./scene.js";
+import { paintSea, paintMist, drawPill } from "./render.js";
 import { validateData } from "./data.js";
 import { createPlay } from "./play.js";
 import { DeviceStore, OnlineStore } from "./store.js";
@@ -67,34 +68,8 @@ function flyTo(house, z = 2.4) {
 }
 
 // ------------------------------------------------------------------ drawing
-function drawSea() {
-  const g = ctx.createLinearGradient(0, 0, 0, vh);
-  g.addColorStop(0, "#9fd3d6"); g.addColorStop(1, "#5fa9bd");
-  ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
-}
-
-function drawMist(t) {
-  const r0 = data.mist_radius * ISO_K, r1 = (data.mist_radius + 7) * ISO_K;
-  ctx.save();
-  ctx.scale(1, 0.5);
-  const g = ctx.createRadialGradient(0, 0, r0 * 0.96, 0, 0, r1);
-  g.addColorStop(0, "rgba(238,241,245,0)");
-  g.addColorStop(0.35, "rgba(238,241,245,.55)");
-  g.addColorStop(1, "rgba(238,241,245,.93)");
-  ctx.fillStyle = g;
-  const far = r1 + (vw + vh) / cam.z * 2; // always past every screen edge
-  ctx.fillRect(-far, -far * 2, far * 2, far * 4);
-  const N = 30, puff = ISO_K * 4.5;
-  for (let i = 0; i < N; i++) {
-    const a = (i / N) * 6.283 + t * 0.00002 * (i % 2 ? 1 : -1);
-    const rr = r0 + ISO_K * (1.5 + 1.5 * Math.sin(t * 0.0003 + i * 1.7));
-    const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
-    const pg = ctx.createRadialGradient(x, y, 0, x, y, puff);
-    pg.addColorStop(0, "rgba(255,255,255,.42)"); pg.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = pg; ctx.fillRect(x - puff, y - puff, puff * 2, puff * 2);
-  }
-  ctx.restore();
-}
+const drawSea = () => paintSea(ctx, vw, vh);
+const drawMist = t => paintMist(ctx, data, t, (vw + vh) / cam.z);
 
 /** Iso-space rectangle on screen, padded by `pad` screen px (computed once per frame). */
 function viewBounds(pad) {
@@ -109,14 +84,7 @@ function drawLive() {
   for (const o of scene.objects) if (inView(o, v)) drawObject(ctx, withTier(o), o.sx, o.sy);
 }
 
-function label(text, x, y, strong) {
-  ctx.font = `${strong ? 600 : 500} ${strong ? 14 : 11}px "Nunito", system-ui, sans-serif`;
-  const w = ctx.measureText(text).width + (strong ? 16 : 10), h = strong ? 22 : 16;
-  ctx.fillStyle = strong ? "#c8352f" : "rgba(43,33,24,.78)";
-  ctx.beginPath(); ctx.roundRect(x - w / 2, y - h, w, h, h / 2); ctx.fill();
-  ctx.fillStyle = "#fff8ec"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText(text, x, y - h / 2 + 0.5);
-}
+const label = (text, x, y, strong) => drawPill(ctx, text, x, y, strong ? "strong" : "small");
 
 function drawLabels() {
   if (!showNames || cam.z < LABEL_ZOOM) return;
