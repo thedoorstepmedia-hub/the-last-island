@@ -98,7 +98,10 @@ export function drawObject(ctx, o, bx, by) {
 
 /**
  * @param {object} data validated data.json
- * @param {{ occupied?: Iterable<string> }} [opts] extra "gx,gy" cells to keep free of trees
+ * @param {{ occupied?: Iterable<string>, plazaLit?: number }} [opts]
+ *   occupied: extra "gx,gy" cells to keep free of trees
+ *   plazaLit: how many of the two plaza lanterns are lit (default 2; the Day 1 story lights one)
+ *   terrainScale: ground bitmap resolution for close-up video shots (default: half the cache scale)
  *   (the video's "before" scene passes the cells of houses that will rise later)
  */
 export function buildScene(data, opts = {}) {
@@ -116,7 +119,9 @@ export function buildScene(data, opts = {}) {
   }));
 
   const extent = Math.ceil(data.island_radius + 7);
-  const objects = [...houseObjects, ...landmarkObjects, ...PLAZA, ...scatter(data, occupied, extent)]
+  let plazaLanterns = 0;
+  const plaza = PLAZA.map(o => (o.kind === "lantern" ? { ...o, lit: plazaLanterns++ < (opts.plazaLit ?? 2) } : o));
+  const objects = [...houseObjects, ...landmarkObjects, ...plaza, ...scatter(data, occupied, extent)]
     .map(o => { const [sx, sy] = iso(o.x, o.y); return { ...o, sx, sy, depth: o.x + o.y }; })
     .sort((a, b) => a.depth - b.depth);
 
@@ -137,7 +142,8 @@ export function buildScene(data, opts = {}) {
     for (const o of objects) drawObject(ctx, o, o.sx, o.sy);
   });
   // Terrain-only bitmap for zoomed-in views, where objects are drawn live (no blurry double copy).
-  const terrainScale = scale / 2;
+  // Sharper ground for close-ups in videos (opts.terrainScale); the phone map keeps it light.
+  const terrainScale = opts.terrainScale ? Math.min(opts.terrainScale, 8192 / (2 * halfW)) : scale / 2;
   const terrain = makeLayer(halfW, halfH, terrainScale, drawTerrain);
 
   // Lookups point at the final objects (with screen positions), not the pre-map copies.
