@@ -43,7 +43,9 @@ function groupCam(houses) {
   const cx = houses.reduce((s, h) => s + h.sx, 0) / houses.length;
   const cy = houses.reduce((s, h) => s + h.sy, 0) / houses.length;
   const spread = Math.max(...houses.map(h => Math.hypot(h.sx - cx, (h.sy - cy) * 1.6)));
-  const z = Math.max(1.5, Math.min(2.6, (W * 0.4) / (spread + 70)));
+  // Always closer than the overview (on a small island the overview is already zoomed in).
+  const lo = Math.max(1.5, fitZ() * 2.2), hi = Math.max(2.6, fitZ() * 3.2);
+  const z = Math.max(lo, Math.min(hi, (W * 0.4) / (spread + 70)));
   return { x: cx, y: cy - 20, z };
 }
 
@@ -52,7 +54,8 @@ function arrivalGroups(handles) {
   const houses = handles.map(h => after.houses.get(h)).filter(Boolean)
     .sort((a, b) => Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x));
   if (!houses.length) return [];
-  const k = Math.min(MAX_STOPS, Math.max(1, Math.round(houses.length / 4)));
+  // A few newcomers: one stop per house (a close-up each). More: groups of about four.
+  const k = houses.length <= MAX_STOPS ? houses.length : Math.min(MAX_STOPS, Math.round(houses.length / 4));
   const size = Math.ceil(houses.length / k);
   const groups = [];
   for (let i = 0; i < houses.length; i += size) groups.push(houses.slice(i, i + size));
@@ -134,7 +137,20 @@ function drawRising(o, p) {
   }
 }
 
-function drawWorld(cam, t, useCache) {
+/** A gold ring marks each new house on top, so it reads even when the shrine or a tree stands in front. */
+function drawArrivalsOnTop(cam, shot, t) {
+  if (!shot || shot.type !== "arrivals") return;
+  for (const h of shot.handles || []) {
+    const o = after.houses.get(h), at = reveal.get("h:" + h);
+    if (!o || at === undefined || t < at || !inView(cam, o)) continue;
+    const p = clamp01((t - at) / POP_TIME);
+    ctx.strokeStyle = `rgba(255,210,110,${0.9 * p})`;
+    ctx.lineWidth = 3 / cam.z;
+    ctx.beginPath(); ctx.ellipse(o.sx, o.sy, 20, 10, 0, 0, 6.283); ctx.stroke();
+  }
+}
+
+function drawWorld(cam, t, useCache, shot) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   paintSea(ctx, W, H);
   setCamera(cam);
@@ -150,6 +166,7 @@ function drawWorld(cam, t, useCache) {
       if (t < at) continue;
       drawRising(o, clamp01((t - at) / POP_TIME));
     }
+    drawArrivalsOnTop(cam, shot, t);
   }
   paintMist(ctx, data, t * 3000, (W + H) / cam.z);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -221,7 +238,7 @@ function render(t) {
   const k = clamp01((t - shot.start) / shot.dur);
   const cam = camAt(shot, t);
   const mode = shot.type === "wide" ? "before" : shot.type === "outro" && k > 0.6 ? "after" : null;
-  drawWorld(cam, t, mode);
+  drawWorld(cam, t, mode, shot);
   drawTags(cam, shot, t);
   drawTitle(shot, t);
   if (t < 0.6) { // open on the Mist lifting
