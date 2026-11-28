@@ -397,6 +397,17 @@ async function init(plan) {
   }
   lanternTarget = scenes.real.view.objects.find(o => o.kind === "lantern" && o.lit && Math.hypot(o.x, o.y) < 7) || null;
 
+  if (!plan.shots || !plan.shots.length) throw new Error("story has no shots");
+  const missing = [];
+  for (const [i, s] of plan.shots.entries()) {
+    const sc = scenes[s.scene] || scenes.real;
+    const need = [s.from, s.to].filter(Boolean);
+    if (need.some(c => c.at === "wish") && !wishTargets[s.scene]) missing.push(`shot ${i + 1}: no wish building to show`);
+    if (need.some(c => c.at === "lantern") && !lanternTarget) missing.push(`shot ${i + 1}: no lit lantern`);
+    const handles = [...need.flatMap(c => c.handle ? [c.handle] : c.handles || []), ...(s.tag ? [s.tag] : []), ...(s.handles || [])];
+    for (const h of handles) if (!sc.view.houses.has(h)) missing.push(`shot ${i + 1}: @${h} has no house`);
+  }
+  if (missing.length) throw new Error("story can't be filmed: " + missing.join("; "));
   shots = planShots(plan.shots);
   reveal = planReveals();
   duration = shots.at(-1).end;

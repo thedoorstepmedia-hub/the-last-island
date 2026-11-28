@@ -345,7 +345,7 @@ async function start() {
       list.append(li);
     });
     $("leaders").hidden = rows.length === 0;
-    if (selected) showCard("found", selected);
+    if (selected && $("play").hidden) showCard("found", selected); // never over an open play panel
   });
   // Houses built in play (server or this device) beat the day-based tier in data.json.
   store.getTiers().then(rows => {
