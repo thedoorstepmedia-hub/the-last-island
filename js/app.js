@@ -20,6 +20,7 @@ let selected = null;        // house object
 let showNames = true;
 let play = null;            // Play panel controller
 const tierOverride = new Map(); // handle -> tier built in play (shown before the next daily rebuild)
+let embers = new Map();         // handle -> Embers (from the server)
 
 const withTier = o => (o.kind === "house" && tierOverride.has(o.handle) ? { ...o, tier: tierOverride.get(o.handle) } : o);
 
@@ -205,7 +206,13 @@ function showCard(kind, house, handle) {
   $("found").hidden = kind !== "found";
   $("missing").hidden = kind !== "missing";
   if (kind === "found") {
-    $("found-name").textContent = "@" + house.handle;
+    $("found-name").textContent = "@" + house.handle + (house.partner ? " +1" : "");
+    const e = embers.get(house.handle);
+    $("found-embers").hidden = e === undefined;
+    if (e !== undefined) {
+      $("found-embers").textContent = e > 0 ? `🔥 ${e.toLocaleString()} Embers · lantern lit` : "🔥 0 Embers · lantern out";
+      $("found-embers").classList.toggle("dim", e <= 0);
+    }
     $("found-job").textContent = data.jobs[house.job];
     $("found-home").textContent = data.tiers[withTier(house).tier];
     $("play-as").textContent = "@" + house.handle;
@@ -326,6 +333,20 @@ async function start() {
     onClose: () => { if (selected) showCard("found", selected); },
   });
   refreshGoal();
+  store.getEmbers().then(rows => {
+    embers = new Map(rows);
+    const list = $("leaders-list");
+    rows.slice(0, 5).forEach(([handle, n]) => {
+      const li = document.createElement("li");
+      li.textContent = "@" + handle + " ";
+      const v = document.createElement("span");
+      v.textContent = `${n.toLocaleString()} 🔥`;
+      li.append(v);
+      list.append(li);
+    });
+    $("leaders").hidden = rows.length === 0;
+    if (selected) showCard("found", selected);
+  });
   // Houses built in play (server or this device) beat the day-based tier in data.json.
   store.getTiers().then(rows => {
     for (const [handle, tier] of rows) {

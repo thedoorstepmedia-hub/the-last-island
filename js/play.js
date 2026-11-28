@@ -4,7 +4,8 @@ import { upgrade, upgradeCost, ENERGY_PER_DAY, JOB_YIELDS, LANTERN_COST, BUY_PRI
 
 const $ = id => document.getElementById(id);
 const TRADE_QTY = 5;
-const ICONS = { coins: "🪙", wood: "🪵", stone: "🪨", food: "🐟" };
+const ICONS = { coins: "🔥", wood: "🪵", stone: "🪨", food: "🐟" };
+const NAMES = { coins: "Embers" };
 const VERBS = {
   "Rice Farmer": "Farm rice", "Fisher": "Go fishing", "Woodcutter": "Chop wood",
   "Stonemason": "Cut stone", "Carpenter": "Do carpentry", "Shrine Keeper": "Tend the shrine",
@@ -12,7 +13,7 @@ const VERBS = {
 const ACTION_BUTTONS = ["p-work", "p-upgrade", "p-donate", "p-buy", "p-sell"];
 
 const costText = cost => Object.entries(cost).map(([k, v]) => `${v} ${ICONS[k]}`).join(" ");
-const gainText = gained => Object.entries(gained).map(([k, v]) => `+${v} ${k}`).join(", ");
+const gainText = gained => Object.entries(gained).map(([k, v]) => `+${v} ${NAMES[k] || k}`).join(", ");
 const errText = err => (err instanceof Error ? err.message : "Something went wrong. Please try again.");
 
 /**
@@ -57,8 +58,8 @@ export function createPlay({ data, store, instagram, onTier, onIsland, onClose }
     $("p-donate").disabled = busy || p[dRes] < LANTERN_COST;
 
     const tRes = $("p-trade-res").value;
-    $("p-buy").textContent = `Buy ${TRADE_QTY} for ${TRADE_QTY * BUY_PRICE} 🪙`;
-    $("p-sell").textContent = `Sell ${TRADE_QTY} for ${TRADE_QTY * SELL_PRICE} 🪙`;
+    $("p-buy").textContent = `Buy ${TRADE_QTY} for ${TRADE_QTY * BUY_PRICE} 🔥`;
+    $("p-sell").textContent = `Sell ${TRADE_QTY} for ${TRADE_QTY * SELL_PRICE} 🔥`;
     $("p-buy").disabled = busy || p.coins < TRADE_QTY * BUY_PRICE;
     $("p-sell").disabled = busy || p[tRes] < TRADE_QTY;
   }

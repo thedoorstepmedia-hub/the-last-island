@@ -35,7 +35,8 @@ export function validateData(raw) {
     if (!Number.isInteger(job) || job < 0 || job >= jobs.length) continue;
     if (!Number.isInteger(clan) || clan < 0 || clan >= clans.length) continue;
     seen.add(handle);
-    residents.push([handle, gx, gy, tier, job, clan]);
+    const partner = typeof row[6] === "string" && /^[a-z]{1,12}$/.test(row[6]) ? row[6] : "";
+    residents.push(partner ? [handle, gx, gy, tier, job, clan, partner] : [handle, gx, gy, tier, job, clan]);
   }
 
   const block = Math.max(2, Math.round(num(raw.block, 4)));

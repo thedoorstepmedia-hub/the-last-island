@@ -1,4 +1,4 @@
-// The Last Island — game rules. Pure functions only (no DOM, no storage) so the exact
+// The Last Island — game rules. "coins" are shown to players as Embers 🔥. Pure functions only (no DOM, no storage) so the exact
 // same rules can later run on the server, where they must be enforced to stop cheating.
 //
 // Every action returns { ok, player, message, ...extra } and never mutates its input.
@@ -74,7 +74,7 @@ export function upgrade(player) {
   if (!cost) return fail(player, "Your manor is already the finest on the island.");
   const missing = Object.entries(cost).filter(([k, v]) => (player[k] || 0) < v);
   if (missing.length) {
-    return fail(player, "Not enough " + missing.map(([k, v]) => `${k} (${player[k] || 0}/${v})`).join(", "));
+    return fail(player, "Not enough " + missing.map(([k, v]) => `${k === "coins" ? "Embers" : k} (${player[k] || 0}/${v})`).join(", "));
   }
   const next = { ...player, tier: player.tier + 1 };
   for (const [k, v] of Object.entries(cost)) next[k] -= v;
@@ -91,7 +91,7 @@ export function trade(player, side, resource, qty) {
   }
   if (side === "buy") {
     const price = qty * BUY_PRICE;
-    if (player.coins < price) return fail(player, `That costs ${price} coins. You have ${player.coins}.`);
+    if (player.coins < price) return fail(player, `That costs ${price} Embers. You have ${player.coins}.`);
     return { ok: true, player: { ...player, [resource]: player[resource] + qty, coins: player.coins - price }, message: "" };
   }
   return fail(player, "Buy or sell?");

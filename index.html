@@ -69,6 +69,11 @@
   .result .ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
   .x { position: absolute; top: -4px; right: 0; background: none; color: var(--muted); padding: 0 6px; min-height: 30px; font-size: 18px; }
   #found-clan { color: var(--clan); font-weight: 700; }
+  .embers { margin: 4px 0 0; font-size: 14px; font-weight: 700; color: #b5541d; }
+  .embers.dim { color: var(--muted); }
+  #leaders { margin-top: 8px; font-size: 13px; }
+  #leaders ol { margin: 4px 0 0; padding-left: 20px; }
+  #leaders li span { color: #b5541d; font-weight: 700; }
   .hint { font-size: 12px; color: var(--muted); margin: 7px 2px 0; }
   .tools { position: fixed; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
   .tools button { width: 46px; height: 46px; padding: 0; border-radius: 50%; font-size: 22px; background: var(--paper);
@@ -124,6 +129,7 @@
   <div class="more">
     <p id="wish" hidden>Today's wish: <span id="wish-text"></span> <span id="wish-by"></span></p>
     <div id="clans" aria-label="Clan sizes"></div>
+    <div id="leaders" hidden><b>🔥 Ember leaders</b><ol id="leaders-list"></ol></div>
   </div>
 </header>
 
@@ -143,6 +149,7 @@
     <button class="x" type="button" data-close aria-label="Close">×</button>
     <h2 id="found-name"></h2>
     <p><span id="found-job"></span> · <span id="found-home"></span> · Clan <span id="found-clan"></span></p>
+    <p id="found-embers" class="embers" hidden></p>
     <div class="row">
       <button id="play-btn" type="button">Play as <span id="play-as"></span></button>
       <button id="share" class="ghost" type="button">Share my house</button>
@@ -177,7 +184,7 @@
     <div class="bar small" aria-hidden="true"><i id="p-energy-bar"></i></div>
   </div>
   <div class="inv" aria-label="Your resources">
-    <span class="res">🪙 <b id="p-coins"></b> coins</span>
+    <span class="res">🔥 <b id="p-coins"></b> Embers</span>
     <span class="res">🪵 <b id="p-wood"></b> wood</span>
     <span class="res">🪨 <b id="p-stone"></b> stone</span>
     <span class="res">🐟 <b id="p-food"></b> food</span>

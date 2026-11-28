@@ -114,8 +114,8 @@ export function buildScene(data, opts = {}) {
   const landmarkObjects = landmarks.map(l => ({
     kind: "landmark", type: l.kind, x: l.gx, y: l.gy, gx: l.gx, gy: l.gy, by: l.by, day: l.day,
   }));
-  const houseObjects = data.residents.map(([handle, gx, gy, tier, job, clan]) => ({
-    kind: "house", handle, x: gx + (strHash(handle) - 0.5) * 0.12, y: gy, gx, gy, tier, job, clan,
+  const houseObjects = data.residents.map(([handle, gx, gy, tier, job, clan, partner]) => ({
+    kind: "house", handle, x: gx + (strHash(handle) - 0.5) * 0.12, y: gy, gx, gy, tier, job, clan, partner: partner || "",
   }));
 
   const extent = Math.ceil(data.island_radius + 7);

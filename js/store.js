@@ -7,6 +7,7 @@
 //   perform(handle, action, res, qty) ->  Promise<{ ok, player, message, gained?, lanterns?, signedOut? }>
 //   getIsland()                       ->  Promise<{ lanterns, byClan }>   lanterns lit in play
 //   getTiers()                        ->  Promise<[handle, tier][]>       houses built in play
+//   getEmbers()                       ->  Promise<[handle, embers][]>     richest first ([] offline)
 //
 // action: "work" | "upgrade" | "buy" | "sell" | "donate".
 // DeviceStore runs economy.js in this browser (offline demo). OnlineStore asks the server,
@@ -103,6 +104,8 @@ export class DeviceStore {
 
   async getIsland() { return cleanIsland(readJson("island"), this.clanCount); }
 
+  async getEmbers() { return []; }
+
   async getTiers() {
     const out = [];
     try {
@@ -195,6 +198,17 @@ export class OnlineStore {
       return cleanIsland(await this._rpc("get_island"), this.clanCount);
     } catch {
       return emptyIsland(this.clanCount);
+    }
+  }
+
+  async getEmbers() {
+    try {
+      const rows = await this._rpc("island_embers");
+      return Array.isArray(rows)
+        ? rows.filter(r => Array.isArray(r) && typeof r[0] === "string" && Number.isInteger(r[1]))
+        : [];
+    } catch {
+      return [];
     }
   }
 

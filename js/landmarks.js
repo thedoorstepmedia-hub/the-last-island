@@ -124,6 +124,25 @@ export function drawPagoda(ctx, bx, by) {
   ctx.fillRect(bx + sx - 1, by + sy - 12, 2, 12);
 }
 
+export function drawBakery(ctx, bx, by) {
+  box(ctx, bx, by, 0.7, 0.56, 14, ["#f1e2c4", "#ead7b2", "#cdb68d"]);
+  box(ctx, bx, by, 0.72, 0.58, 3, ["#8a5a3a", "#7d5034", "#64402a"], -0.01);
+  poly(ctx, bx, by, [P(-0.05, 0.29, 3), P(0.2, 0.29, 3), P(0.2, 0.29, 11), P(-0.05, 0.29, 11)], "#6b4a30");
+  poly(ctx, bx, by, [P(-0.3, 0.29, 6), P(-0.12, 0.29, 6), P(-0.12, 0.29, 11), P(-0.3, 0.29, 11)], "#ffd27a");
+  for (let i = 0; i < 4; i++) { // striped awning over the door
+    const a = -0.32 + i * 0.16;
+    poly(ctx, bx, by, [P(a, 0.29, 14), P(a + 0.16, 0.29, 14), P(a + 0.16, 0.42, 10), P(a, 0.42, 10)],
+      i % 2 ? "#fff3e0" : "#d98b3a");
+  }
+  hipRoof(ctx, bx, by, 0.7, 0.56, 14, 10, 0.1, ["#7a3b2a", "#a8513a", "#8f4532"], 0.3);
+  const [cx, cy] = P(0.2, -0.12, 30); // chimney + smoke
+  ctx.fillStyle = "#8a7a6a"; ctx.fillRect(bx + cx - 2.5, by + cy - 2, 5, 9);
+  steam(ctx, bx + cx, by + cy - 4, 1);
+  const [sx, sy] = P(0.36, 0.34, 9); // bread sign
+  ctx.fillStyle = "#c98a3e";
+  ctx.beginPath(); ctx.ellipse(bx + sx + 5, by + sy, 5, 3, -0.3, 0, 6.283); ctx.fill();
+}
+
 /** Empty wish lot: a little signpost waiting for the comments to decide. */
 export function drawWishSign(ctx, bx, by) {
   ctx.fillStyle = "#6b4a30";
@@ -145,6 +164,7 @@ export const LANDMARK_SPRITES = {
   lighthouse: drawLighthouse,
   watchtower: drawWatchtower,
   pagoda: drawPagoda,
+  bakery: drawBakery,
 };
 
 /** Names used in the video voiceover and captions. */
@@ -155,4 +175,5 @@ export const LANDMARK_NAMES = {
   lighthouse: "a lighthouse",
   watchtower: "a watchtower",
   pagoda: "a pagoda",
+  bakery: "a bakery",
 };
